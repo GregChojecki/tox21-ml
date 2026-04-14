@@ -1,105 +1,31 @@
-# Streaming
+# Tox21 ML: Toxicity Prediction with Machine Learning
 
-## Stream JSON Lines
+## Overview
+This project applies machine learning to the
+[Tox21 dataset](https://tripod.nih.gov/tox21/challenge/) —
+a benchmark dataset of ~8,000 compounds tested across
+12 toxicological assays. The goal is to predict molecular
+toxicity from chemical structure alone.
 
-To stream JSON Lines, declare the return type and use `yield` to return the data.
+## Why This Matters
+Testing compounds for toxicity in the lab is slow and expensive.
+ML models that can predict toxicity from molecular structure
+help prioritise which compounds to test, reducing cost and
+animal testing in early drug discovery.
 
-```python
-@app.get("/items/stream")
-async def stream_items() -> AsyncIterable[Item]:
-    for item in items:
-        yield item
-```
+## The 12 Assays
+- **Nuclear Receptors (NR):** AR, ER, AhR, Aromatase, PPAR-γ
+- **Stress Response (SR):** ARE, ATAD5, HSE, MMP, p53
 
-## Server-Sent Events (SSE)
+## Approach (Planned)
+1. Exploratory Data Analysis
+2. Baseline: Morgan Fingerprints + Random Forest
+3. Deep Learning: PyTorch Feedforward Network
+4. Graph Neural Network (GNN) on molecular graphs
 
-To stream Server-Sent Events, use `response_class=EventSourceResponse` and `yield` items from the endpoint.
+## Tech Stack
+Python, DeepChem, RDKit, PyTorch, scikit-learn, pandas
 
-Plain objects are automatically JSON-serialized as `data:` fields, declare the return type so the serialization is done by Pydantic:
-
-```python
-from collections.abc import AsyncIterable
-
-from fastapi import FastAPI
-from fastapi.sse import EventSourceResponse
-from pydantic import BaseModel
-
-app = FastAPI()
-
-
-class Item(BaseModel):
-    name: str
-    price: float
-
-
-@app.get("/items/stream", response_class=EventSourceResponse)
-async def stream_items() -> AsyncIterable[Item]:
-    yield Item(name="Plumbus", price=32.99)
-    yield Item(name="Portal Gun", price=999.99)
-```
-
-For full control over SSE fields (`event`, `id`, `retry`, `comment`), yield `ServerSentEvent` instances:
-
-```python
-from collections.abc import AsyncIterable
-
-from fastapi import FastAPI
-from fastapi.sse import EventSourceResponse, ServerSentEvent
-
-app = FastAPI()
-
-
-@app.get("/events", response_class=EventSourceResponse)
-async def stream_events() -> AsyncIterable[ServerSentEvent]:
-    yield ServerSentEvent(data={"status": "started"}, event="status", id="1")
-    yield ServerSentEvent(data={"progress": 50}, event="progress", id="2")
-```
-
-Use `raw_data` instead of `data` to send pre-formatted strings without JSON encoding:
-
-```python
-yield ServerSentEvent(raw_data="plain text line", event="log")
-```
-
-## Stream bytes
-
-To stream bytes, declare a `response_class=` of `StreamingResponse` or a sub-class, and use `yield` to return the data.
-
-```python
-from fastapi import FastAPI
-from fastapi.responses import StreamingResponse
-from app.utils import read_image
-
-app = FastAPI()
-
-
-class PNGStreamingResponse(StreamingResponse):
-    media_type = "image/png"
-
-@app.get("/image", response_class=PNGStreamingResponse)
-def stream_image_no_async_no_annotation():
-    with read_image() as image_file:
-        yield from image_file
-```
-
-prefer this over returning a `StreamingResponse` directly:
-
-```python
-# DO NOT DO THIS
-
-import anyio
-from fastapi import FastAPI
-from fastapi.responses import StreamingResponse
-from app.utils import read_image
-
-app = FastAPI()
-
-
-class PNGStreamingResponse(StreamingResponse):
-    media_type = "image/png"
-
-
-@app.get("/")
-async def main():
-    return PNGStreamingResponse(read_image())
-```
+## Author
+Greg Chojecki — AI Engineer in training |
+MSc Analytical Chemistry | 6 years data science in chemistry
